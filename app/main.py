@@ -1,21 +1,14 @@
-from fastapi import FastAPI, Request
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.errors import RateLimitExceeded
-from slowapi import _rate_limit_exceeded_handler
+from fastapi import FastAPI
+from app.api.routes.analysis import router as analysis_router
+from app.core.database import engine, Base
+from app.models.chat_analysis import ChatAnalysis  # IMPORTANT import model
 
-from app.api.routes import upload
-from app.core.rate_limiter import limiter
-
-app = FastAPI(title="Chat Universe Analyzer API")
-
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
-
-app.include_router(upload.router)
+app = FastAPI(title="WhatsApp Multiverse Analyzer", version="1.0.0")
 
 
-@app.get("/")
-@limiter.limit("10/minute")
-async def root(request: Request):
-    return {"status": "Backend Running"}
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
+
+
+app.include_router(analysis_router)
